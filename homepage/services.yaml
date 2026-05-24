@@ -1,0 +1,28 @@
+---
+# For configuration options and examples, please see:
+# https://gethomepage.dev/configs/services/
+
+- NAS Immich:
+    - Immich:
+        icon: immich.png
+        href: http://{{HOMEPAGE_VAR_TAILSCALE_IP}}:2283
+        description: Cloud photos privé
+        widget:
+          type: immich
+          url: http://{{HOMEPAGE_VAR_TAILSCALE_IP}}:2283
+          key: {{HOMEPAGE_VAR_IMMICH_API_KEY}}
+          version: 2
+    - Dashboard:
+        icon: grafana.png
+        href: http://{{HOMEPAGE_VAR_TAILSCALE_IP}}:8088
+        description: Monitoring & Actions
+
+    - Ntfy:
+        icon: ntfy.png
+        href: https://ntfy.sh/nomas2026xyz
+        description: Notifications push
+
+    - Healthchecks:
+        icon: healthchecks.png
+        href: https://healthchecks.io/projects/41396268-2958-4ea4-9c6c-0b3fd6d6605c/checks/
+        description: Surveillance serveur

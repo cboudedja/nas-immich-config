@@ -1,0 +1,14 @@
+# Données sensibles
+.env
+*.secret
+ntfy-cache/
+ntfy-data/
+postgres/
+*.sql.gz
+*.log
+*.log.*.gz
+
+# Tokens et mots de passe
+*token*
+*password*
+*secret*

@@ -1,0 +1,9 @@
+[Unit]
+Description=Monitor and repair Immich pool
+
+[Service]
+Type=oneshot
+User=root
+ExecStart=/bin/bash /home/immich/monitor-pool.sh
+StandardOutput=journal
+StandardError=journal

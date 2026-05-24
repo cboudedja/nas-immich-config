@@ -1,0 +1,9 @@
+[Unit]
+Description=Run pool monitor every 5 minutes
+
+[Timer]
+OnBootSec=120
+OnUnitActiveSec=300
+
+[Install]
+WantedBy=timers.target

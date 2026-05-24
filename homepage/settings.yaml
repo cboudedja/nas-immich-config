@@ -1,0 +1,22 @@
+---
+# For configuration options and examples, please see:
+# https://gethomepage.dev/configs/settings/
+
+title: NAS Immich
+theme: dark
+color: slate
+headerStyle: clean
+allowedHosts:
+  - "{{HOMEPAGE_VAR_TAILSCALE_IP}}"
+  - "{{HOMEPAGE_VAR_LOCAL_IP}}"
+cardBlur: xl
+layout:
+  NAS Immich:
+    style: row
+    columns: 4
+background:
+  image: /images/background.jpg
+  blur: md
+  saturate: 80
+  brightness: 75
+  opacity: 80

@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NAS Immich — Dashboard</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="NAS Immich">
+<meta name="theme-color" content="#0a0c10">
+<link rel="apple-touch-icon" href="/icon.png">
+<link rel="manifest" href="/manifest.json">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0a0c10;--bg2:#12151c;--bg3:#1a1e28;--bg4:#232834;
+  --tx:#e8e6e1;--tx2:#9a978e;--tx3:#5f5d57;
+  --green:#22c55e;--green2:#16a34a;--green-bg:rgba(34,197,94,.08);
+  --amber:#f59e0b;--amber-bg:rgba(245,158,11,.08);
+  --red:#ef4444;--red-bg:rgba(239,68,68,.08);
+  --blue:#3b82f6;--blue-bg:rgba(59,130,246,.08);
+  --purple:#a78bfa;--purple-bg:rgba(167,139,250,.08);
+  --cyan:#06b6d4;--cyan-bg:rgba(6,182,212,.08);
+  --orange:#f97316;--orange-bg:rgba(249,115,22,.08);
+  --radius:12px;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;padding:20px;line-height:1.5}
+
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px}
+.header h1{font-size:18px;font-weight:600;letter-spacing:-.02em;display:flex;align-items:center;gap:10px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 12px var(--green);animation:pulse 2s ease infinite;display:inline-block}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.header-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.status-pill{font-size:11px;padding:4px 12px;border-radius:20px;background:var(--green-bg);color:var(--green);font-weight:500;border:1px solid rgba(34,197,94,.15)}
+.refresh-btn{background:var(--bg3);border:1px solid var(--bg4);color:var(--tx2);padding:5px 12px;border-radius:8px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s}
+.refresh-btn:hover{background:var(--bg4);color:var(--tx)}
+.last-update{font-size:11px;color:var(--tx3)}
+
+/* GRILLES */
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:14px}
+.grid4b{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:14px}
+@media(max-width:900px){.grid4,.grid4b{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:500px){.grid4,.grid4b{grid-template-columns:1fr}}
+
+.wide-grid{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:14px}
+@media(max-width:700px){.wide-grid{grid-template-columns:1fr}}
+
+/* CARDS */
+.card{background:var(--bg2);border:1px solid var(--bg3);border-radius:var(--radius);padding:18px;position:relative;overflow:hidden}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.05),transparent)}
+.card-label{font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;font-weight:500}
+.card-value{font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:600;letter-spacing:-.03em;line-height:1.1}
+.card-sub{font-size:11px;color:var(--tx2);margin-top:5px}
+.meter{height:5px;background:var(--bg4);border-radius:3px;margin-top:10px;overflow:hidden}
+.meter-fill{height:100%;border-radius:3px;transition:width 1s ease}
+
+/* CHART */
+.chart-card{background:var(--bg2);border:1px solid var(--bg3);border-radius:var(--radius);padding:18px}
+.chart-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+.chart-title{font-size:12px;font-weight:500;color:var(--tx2)}
+.chart-legend{display:flex;gap:12px;font-size:11px;color:var(--tx3)}
+.chart-legend span{display:flex;align-items:center;gap:5px}
+.ldot{width:8px;height:8px;border-radius:2px;display:inline-block}
+canvas{width:100%!important;height:160px!important}
+
+/* DOCKER */
+.docker-grid{display:grid;gap:6px}
+.docker-row{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:var(--bg3);border-radius:8px;font-size:12px}
+.docker-name{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx)}
+.docker-status{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--tx2)}
+.docker-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.docker-dot.up{background:var(--green);box-shadow:0 0 6px var(--green)}
+.docker-dot.down{background:var(--red);box-shadow:0 0 6px var(--red)}
+
+/* BACKUP STATUS */
+.backup-card{background:var(--bg2);border:1px solid var(--bg3);border-radius:var(--radius);padding:18px;margin-bottom:14px}
+.backup-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.backup-status{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500}
+.backup-badge{font-size:11px;padding:3px 10px;border-radius:20px}
+.badge-ok{background:var(--green-bg);color:var(--green);border:1px solid rgba(34,197,94,.2)}
+.badge-err{background:var(--red-bg);color:var(--red);border:1px solid rgba(239,68,68,.2)}
+.badge-run{background:var(--amber-bg);color:var(--amber);border:1px solid rgba(245,158,11,.2)}
+.badge-unk{background:var(--bg3);color:var(--tx3)}
+.backup-meta{font-size:11px;color:var(--tx3)}
+.backup-disks{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+@media(max-width:500px){.backup-disks{grid-template-columns:1fr}}
+.disk-item{background:var(--bg3);border-radius:8px;padding:10px 12px}
+.disk-label{font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.disk-val{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:500;color:var(--tx)}
+
+/* NETWORK */
+.net-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.net-item{background:var(--bg3);border-radius:8px;padding:10px 12px;display:flex;align-items:center;gap:8px}
+.net-icon{font-size:16px;opacity:.5}
+.net-val{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:500}
+.net-label{font-size:10px;color:var(--tx3)}
+
+/* COMMANDS */
+.commands-card{background:var(--bg2);border:1px solid var(--bg3);border-radius:var(--radius);padding:18px;margin-bottom:14px}
+.cmd-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:7px;margin-top:10px}
+.cmd{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg3);border-radius:8px;cursor:pointer;transition:all .15s;border:1px solid transparent}
+.cmd:hover{border-color:var(--bg4);background:var(--bg4)}
+.cmd-icon{font-size:13px;opacity:.4;flex-shrink:0}
+.cmd-text{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx2);flex:1}
+.cmd-label{font-size:10px;color:var(--tx3);white-space:nowrap}
+
+/* ACTIONS */
+.actions-card{background:var(--bg2);border:1px solid var(--bg3);border-radius:var(--radius);padding:18px;margin-bottom:14px}
+.actions-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-top:12px}
+.action-btn{display:flex;align-items:center;justify-content:center;gap:7px;padding:11px 16px;border-radius:10px;font-size:13px;font-weight:500;cursor:pointer;border:none;font-family:'DM Sans',sans-serif;transition:all .2s}
+.action-btn.green{background:var(--green-bg);color:var(--green);border:1px solid rgba(34,197,94,.2)}
+.action-btn.green:hover{background:rgba(34,197,94,.15)}
+.action-btn.blue{background:var(--blue-bg);color:var(--blue);border:1px solid rgba(59,130,246,.2)}
+.action-btn.blue:hover{background:rgba(59,130,246,.15)}
+.action-btn.amber{background:var(--amber-bg);color:var(--amber);border:1px solid rgba(245,158,11,.2)}
+.action-btn.amber:hover{background:rgba(245,158,11,.15)}
+.action-btn.red{background:var(--red-bg);color:var(--red);border:1px solid rgba(239,68,68,.2)}
+.action-btn.red:hover{background:rgba(239,68,68,.15)}
+.action-result{margin-top:10px;padding:9px 12px;border-radius:8px;font-size:12px;display:none}
+.action-result.ok{background:var(--green-bg);color:var(--green)}
+.action-result.err{background:var(--red-bg);color:var(--red)}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:1000;backdrop-filter:blur(4px)}
+.modal-overlay.show{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--bg3);border-radius:16px;padding:26px;max-width:340px;width:90%;text-align:center}
+.modal h3{font-size:15px;font-weight:600;margin-bottom:8px}
+.modal p{font-size:13px;color:var(--tx2);margin-bottom:22px;line-height:1.6}
+.modal-btns{display:flex;gap:10px;justify-content:center}
+.modal-btn{padding:8px 22px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;border:none;font-family:'DM Sans',sans-serif}
+.modal-btn.cancel{background:var(--bg3);color:var(--tx2)}
+.modal-btn.confirm{background:var(--red);color:#fff}
+.modal-btn.confirm.amber{background:var(--amber);color:#000}
+.modal-btn.confirm.blue{background:var(--blue);color:#fff}
+
+/* MISC */
+.section-title{font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:500;margin-bottom:10px}
+.copied{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:var(--green);color:#000;padding:6px 16px;border-radius:8px;font-size:12px;font-weight:500;opacity:0;transition:opacity .3s;pointer-events:none;z-index:999}
+.copied.show{opacity:1}
+.footer{text-align:center;margin-top:20px;font-size:10px;color:var(--tx3);padding:10px}
+.photos-badge{display:inline-flex;align-items:center;gap:5px;background:var(--purple-bg);color:var(--purple);border:1px solid rgba(167,139,250,.2);border-radius:20px;padding:3px 10px;font-size:11px;font-weight:500}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <h1><span class="dot"></span>NAS Immich — MacBook Pro 2012</h1>
+  <div class="header-right">
+    <span class="last-update" id="last-update">—</span>
+    <span class="photos-badge" id="photo-count">📷 — photos</span>
+    <span class="status-pill" id="status-pill">Connecté</span>
+    <button class="refresh-btn" onclick="refreshAll()">Actualiser</button>
+  </div>
+</div>
+
+<!-- MÉTRIQUES LIGNE 1 : Temp, RAM, CPU, Énergie -->
+<div class="grid4">
+  <div class="card">
+    <div class="card-label">Température CPU</div>
+    <div class="card-value" id="cpu-temp" style="color:var(--green)">—°C</div>
+    <div class="card-sub">Seuil: 87°C / Critique: 105°C</div>
+    <div class="meter"><div class="meter-fill" id="temp-meter" style="width:0%;background:var(--green)"></div></div>
+  </div>
+  <div class="card">
+    <div class="card-label">RAM utilisée</div>
+    <div class="card-value" id="ram-used" style="color:var(--blue)">— Go</div>
+    <div class="card-sub" id="ram-sub">— disponible</div>
+    <div class="meter"><div class="meter-fill" id="ram-meter" style="width:0%;background:var(--blue)"></div></div>
+  </div>
+  <div class="card">
+    <div class="card-label">CPU</div>
+    <div class="card-value" id="cpu-usage" style="color:var(--purple)">—%</div>
+    <div class="card-sub">Intel i5-3210M · 2 cœurs</div>
+    <div class="meter"><div class="meter-fill" id="cpu-meter" style="width:0%;background:var(--purple)"></div></div>
+  </div>
+  <div class="card">
+    <div class="card-label">Énergie CPU</div>
+    <div class="card-value" id="power-usage" style="color:var(--amber)">— W</div>
+    <div class="card-sub">Mesure RAPL Intel</div>
+    <div class="meter"><div class="meter-fill" id="power-meter" style="width:0%;background:var(--amber)"></div></div>
+  </div>
+</div>
+
+<!-- MÉTRIQUES LIGNE 2 : Ventilateur, Batterie, Uptime, Réseau -->
+<div class="grid4b">
+  <div class="card">
+    <div class="card-label">Ventilateur</div>
+    <div class="card-value" id="fan-speed" style="color:var(--tx2)">— RPM</div>
+    <div class="card-sub">Min: 2000 / Max: 6200 RPM</div>
+    <div class="meter"><div class="meter-fill" id="fan-meter" style="width:0%;background:var(--tx3)"></div></div>
+  </div>
+  <div class="card">
+    <div class="card-label">Batterie</div>
+    <div class="card-value" id="battery" style="color:var(--green)">—%</div>
+    <div class="card-sub" id="battery-sub">—</div>
+    <div class="meter"><div class="meter-fill" id="bat-meter" style="width:0%;background:var(--green)"></div></div>
+  </div>
+  <div class="card">
+    <div class="card-label">Uptime</div>
+    <div class="card-value" id="uptime" style="color:var(--tx);font-size:20px">—</div>
+    <div class="card-sub">Debian 13 Trixie</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Réseau temps réel</div>
+    <div class="net-grid">
+      <div class="net-item">
+        <span class="net-icon">↓</span>
+        <div>
+          <div class="net-val" id="net-down" style="color:var(--cyan)">— Mo/s</div>
+          <div class="net-label">Download</div>
+        </div>
+      </div>
+      <div class="net-item">
+        <span class="net-icon">↑</span>
+        <div>
+          <div class="net-val" id="net-up" style="color:var(--orange)">— Mo/s</div>
+          <div class="net-label">Upload</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- GRAPHIQUE HISTORIQUE + DOCKER -->
+<div class="wide-grid">
+  <div class="chart-card">
+    <div class="chart-header">
+      <span class="chart-title">Historique 24h — Température, CPU & RAM</span>
+      <div class="chart-legend">
+        <span><span class="ldot" style="background:var(--green)"></span>Temp °C</span>
+        <span><span class="ldot" style="background:var(--purple)"></span>CPU %</span>
+        <span><span class="ldot" style="background:var(--blue)"></span>RAM %</span>
+      </div>
+    </div>
+    <canvas id="chart-main"></canvas>
+  </div>
+  <div class="card" style="padding:18px">
+    <div class="card-label" style="margin-bottom:12px">Conteneurs Docker</div>
+    <div class="docker-grid" id="docker-list">
+      <div class="docker-row"><span class="docker-name">Chargement...</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- SAUVEGARDE -->
+<div class="backup-card">
+  <div class="section-title">Sauvegarde rsync</div>
+  <div class="backup-row">
+    <div class="backup-status">
+      <span id="backup-badge" class="backup-badge badge-unk">—</span>
+      <span id="backup-date" style="font-size:12px;color:var(--tx2)">—</span>
+    </div>
+  </div>
+  <div class="backup-disks">
+    <div class="disk-item">
+      <div class="disk-label">Pool Immich (source)</div>
+      <div class="disk-val" id="pool-info">—</div>
+      <div class="meter" style="margin-top:8px"><div class="meter-fill" id="pool-meter" style="width:0%;background:var(--cyan)"></div></div>
+    </div>
+    <div class="disk-item">
+      <div class="disk-label">HDD Backup (destination)</div>
+      <div class="disk-val" id="backup-info">—</div>
+      <div class="meter" style="margin-top:8px"><div class="meter-fill" id="backup-meter" style="width:0%;background:var(--green)"></div></div>
+    </div>
+  </div>
+  <button class="action-btn blue" style="margin-top:12px;width:100%" onclick="confirmAction('backup','Lancer la sauvegarde ?','Le script rsync va démarrer en arrière-plan.','blue')">💾 Lancer la sauvegarde</button>
+</div>
+
+<!-- COMMANDES SSH -->
+<div class="commands-card">
+  <div class="section-title">Commandes SSH rapides</div>
+  <div class="cmd-grid">
+    <div class="cmd" onclick="copyCmd('ssh immich@192.168.1.61')"><span class="cmd-icon">→</span><span class="cmd-text">ssh immich@192.168.1.61</span><span class="cmd-label">Connexion</span></div>
+    <div class="cmd" onclick="copyCmd('cd ~/immich && docker compose up -d')"><span class="cmd-icon">▶</span><span class="cmd-text">docker compose up -d</span><span class="cmd-label">Démarrer</span></div>
+    <div class="cmd" onclick="copyCmd('cd ~/immich && docker compose down')"><span class="cmd-icon">■</span><span class="cmd-text">docker compose down</span><span class="cmd-label">Arrêter</span></div>
+    <div class="cmd" onclick="copyCmd('cd ~/immich && docker compose restart')"><span class="cmd-icon">↻</span><span class="cmd-text">docker compose restart</span><span class="cmd-label">Redémarrer</span></div>
+    <div class="cmd" onclick="copyCmd('docker stats --no-stream')"><span class="cmd-icon">◉</span><span class="cmd-text">docker stats --no-stream</span><span class="cmd-label">Ressources</span></div>
+    <div class="cmd" onclick="copyCmd('sensors | grep Core')"><span class="cmd-icon">⏲</span><span class="cmd-text">sensors | grep Core</span><span class="cmd-label">Température</span></div>
+    <div class="cmd" onclick="copyCmd('cd ~/immich && docker compose pull && docker compose up -d')"><span class="cmd-icon">↓</span><span class="cmd-text">docker compose pull && up -d</span><span class="cmd-label">Mise à jour</span></div>
+    <div class="cmd" onclick="copyCmd('cat ~/backup.log | tail -5')"><span class="cmd-icon">📋</span><span class="cmd-text">cat ~/backup.log | tail -5</span><span class="cmd-label">Log backup</span></div>
+  </div>
+</div>
+
+<!-- ACTIONS À DISTANCE -->
+<div class="actions-card">
+  <div class="section-title">Actions à distance</div>
+  <div class="actions-grid">
+    <button class="action-btn green" onclick="confirmAction('restart-immich','Redémarrer Immich ?','Les 4 conteneurs Docker vont redémarrer. Immich sera indisponible ~30 secondes.','green')">↻ Redémarrer Immich</button>
+    
+    <button class="action-btn amber" onclick="confirmAction('reboot','Redémarrer le serveur ?','Le MacBook va redémarrer. Tous les services seront indisponibles ~2 minutes puis repartiront automatiquement.','amber')">⟳ Redémarrer le serveur</button>
+    <button class="action-btn red" onclick="confirmAction('poweroff','Éteindre le serveur ?','Le MacBook va s\'éteindre complètement. Pour le rallumer, il faudra appuyer physiquement sur le bouton.','red')">⏻ Éteindre le serveur</button>
+  </div>
+  <div class="action-result" id="action-result"></div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h3 id="modal-title">Confirmer</h3>
+    <p id="modal-desc"></p>
+    <div class="modal-btns">
+      <button class="modal-btn cancel" onclick="closeModal()">Annuler</button>
+      <button class="modal-btn confirm" id="modal-confirm" onclick="executeAction()">Confirmer</button>
+    </div>
+  </div>
+</div>
+
+<div class="footer">NAS Immich · MacBook Pro 13" mi-2012 · Debian 13 Trixie · Docker 29.5.1 · Tailscale 100.114.163.116</div>
+<div class="copied" id="copied">Copié !</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+const API_URL = window.location.origin + '/metrics';
+const API_TOKEN = '%%API_TOKEN%%';
+const MAX_POINTS = 288; // 24h à 5 min d'intervalle
+
+const tempHistory = [], cpuHistory = [], ramHistory = [], labels = [];
+
+const ctx = document.getElementById('chart-main').getContext('2d');
+const chart = new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels,
+    datasets: [
+      { label: 'Temp °C', data: tempHistory, borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,.08)', fill: true, tension: .4, pointRadius: 0, borderWidth: 1.5 },
+      { label: 'CPU %', data: cpuHistory, borderColor: '#a78bfa', backgroundColor: 'rgba(167,139,250,.06)', fill: true, tension: .4, pointRadius: 0, borderWidth: 1.5 },
+      { label: 'RAM %', data: ramHistory, borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,.06)', fill: true, tension: .4, pointRadius: 0, borderWidth: 1.5 }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { display: false },
+      y: { grid: { color: 'rgba(255,255,255,.04)' }, ticks: { color: '#5f5d57', font: { family: 'JetBrains Mono', size: 10 } }, min: 0, max: 105 }
+    },
+    interaction: { intersect: false, mode: 'index' },
+    animation: { duration: 400 }
+  }
+});
+
+function getColor(val, low, med) {
+  return val < low ? 'var(--green)' : val < med ? 'var(--amber)' : 'var(--red)';
+}
+
+function updateDashboard(data) {
+  // Température
+  const temp = data.temp || 0;
+  const tc = getColor(temp, 70, 85);
+  document.getElementById('cpu-temp').textContent = temp + '°C';
+  document.getElementById('cpu-temp').style.color = tc;
+  document.getElementById('temp-meter').style.width = (temp/105*100) + '%';
+  document.getElementById('temp-meter').style.background = tc;
+
+  // RAM
+  const ramPct = data.ramPct || 0;
+  document.getElementById('ram-used').textContent = data.ramUsed || '—';
+  document.getElementById('ram-sub').textContent = (data.ramAvail || '—') + ' disponible / ' + (data.ramTotal || '—');
+  document.getElementById('ram-meter').style.width = ramPct + '%';
+  document.getElementById('ram-meter').style.background = getColor(ramPct, 60, 80);
+
+  // CPU
+  const cpuPct = data.cpuPct || 0;
+  document.getElementById('cpu-usage').textContent = cpuPct + '%';
+  document.getElementById('cpu-meter').style.width = Math.min(cpuPct,100) + '%';
+  document.getElementById('cpu-meter').style.background = getColor(cpuPct, 50, 80);
+
+  // Énergie
+  document.getElementById('power-usage').textContent = (data.watts || '—') + ' W';
+  document.getElementById('power-meter').style.width = Math.min((data.watts||0)/45*100,100) + '%';
+
+  // Ventilateur
+  document.getElementById('fan-speed').textContent = (data.fan || '—') + ' RPM';
+  const fanPct = Math.max(0, ((data.fan||2000)-2000)/4200*100);
+  document.getElementById('fan-meter').style.width = fanPct + '%';
+  document.getElementById('fan-meter').style.background = fanPct > 70 ? 'var(--amber)' : 'var(--tx3)';
+
+  // Batterie
+  document.getElementById('battery').textContent = (data.battery||'—') + '%';
+  document.getElementById('battery-sub').textContent = data.batStatus || '—';
+  document.getElementById('bat-meter').style.width = (data.battery||0) + '%';
+
+  // Uptime
+  document.getElementById('uptime').textContent = data.uptime || '—';
+
+  // Réseau
+  document.getElementById('net-down').textContent = (data.netDown || '0') + ' Mo/s';
+  document.getElementById('net-up').textContent = (data.netUp || '0') + ' Mo/s';
+
+  // Photos
+  if (data.photoCount !== undefined) {
+    document.getElementById('photo-count').textContent = '📷 ' + data.photoCount.toLocaleString('fr') + ' · 🎬 ' + (data.videoCount||0).toLocaleString('fr');
+  }
+
+  // Disques
+  if (data.diskUsed && data.diskTotal) {
+    document.getElementById('pool-info').textContent = data.diskUsed + ' / ' + data.diskTotal;
+    document.getElementById('pool-meter').style.width = (data.diskPct||0) + '%';
+    document.getElementById('pool-meter').style.background = getColor(data.diskPct||0, 70, 85);
+  }
+  if (data.backupUsed && data.backupTotal) {
+    document.getElementById('backup-info').textContent = data.backupUsed + ' / ' + data.backupTotal;
+    document.getElementById('backup-meter').style.width = (data.backupPct||0) + '%';
+    document.getElementById('backup-meter').style.background = getColor(data.backupPct||0, 70, 85);
+  }
+
+  // Statut backup
+  const bStatus = data.backupStatus || 'unknown';
+  const badge = document.getElementById('backup-badge');
+  const badgeMap = {
+    success: ['badge-ok', '✓ Succès'],
+    error: ['badge-err', '✗ Erreur'],
+    running: ['badge-run', '⟳ En cours'],
+    unknown: ['badge-unk', '— Inconnu']
+  };
+  const [cls, txt] = badgeMap[bStatus] || badgeMap.unknown;
+  badge.className = 'backup-badge ' + cls;
+  badge.textContent = txt;
+  document.getElementById('backup-date').textContent = data.backupDate || '—';
+
+  // Docker
+  const dList = document.getElementById('docker-list');
+  if (data.containers && data.containers.length) {
+    dList.innerHTML = data.containers.map(c => `
+      <div class="docker-row">
+        <span class="docker-name">${c.name.replace('immich_','')}</span>
+        <span class="docker-status"><span class="docker-dot ${c.healthy?'up':'down'}"></span>${c.status}</span>
+      </div>`).join('');
+  }
+
+  // Graphique
+  const now = new Date();
+  const t = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+  labels.push(t); tempHistory.push(temp); cpuHistory.push(cpuPct); ramHistory.push(ramPct);
+  if (labels.length > MAX_POINTS) { labels.shift(); tempHistory.shift(); cpuHistory.shift(); ramHistory.shift(); }
+  chart.update();
+
+  document.getElementById('last-update').textContent = 'Mis à jour à ' + now.toLocaleTimeString('fr');
+}
+
+async function fetchData() {
+  try {
+    const res = await fetch(API_URL, { headers: { 'X-API-Token': API_TOKEN } });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    updateDashboard(data);
+    document.getElementById('status-pill').textContent = 'Connecté';
+    document.getElementById('status-pill').style.cssText = 'background:var(--green-bg);color:var(--green);border-color:rgba(34,197,94,.15)';
+  } catch (e) {
+    document.getElementById('status-pill').textContent = 'Hors ligne';
+    document.getElementById('status-pill').style.cssText = 'background:var(--red-bg);color:var(--red);border-color:rgba(239,68,68,.15)';
+  }
+}
+
+function refreshAll() { fetchData(); }
+fetchData();
+setInterval(fetchData, 5000);
+
+function copyCmd(text) {
+  navigator.clipboard.writeText(text).then(() => {
+    const el = document.getElementById('copied');
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 1500);
+  });
+}
+
+let pendingAction = null;
+function confirmAction(action, title, desc, type) {
+  pendingAction = action;
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-desc').textContent = desc;
+  const btn = document.getElementById('modal-confirm');
+  btn.className = 'modal-btn confirm' + (type !== 'red' ? ' ' + type : '');
+  document.getElementById('modal').classList.add('show');
+}
+function closeModal() {
+  document.getElementById('modal').classList.remove('show');
+  pendingAction = null;
+}
+async function executeAction() {
+  const action = pendingAction;
+  closeModal();
+  if (!action) return;
+  const result = document.getElementById('action-result');
+  result.className = 'action-result'; result.style.display = 'block';
+  result.textContent = 'Exécution en cours...';
+  try {
+    const res = await fetch(`${API_URL.replace('/metrics','')}/action/${action}`, {
+      method: 'POST', headers: { 'X-API-Token': API_TOKEN }
+    });
+    const data = await res.json();
+    result.className = 'action-result ok';
+    result.textContent = '✓ ' + data.message;
+  } catch (e) {
+    result.className = 'action-result err';
+    result.textContent = '✗ Erreur : serveur inaccessible';
+  }
+  setTimeout(() => { result.style.display = 'none'; }, 6000);
+}
+document.getElementById('modal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+</script>
+</body>
+</html>

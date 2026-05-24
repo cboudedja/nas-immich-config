@@ -1,0 +1,10 @@
+/home/immich/backup.log
+/home/immich/backup-postgres.log
+/home/immich/monitor.log {
+    weekly
+    rotate 4
+    compress
+    missingok
+    notifempty
+    copytruncate
+}

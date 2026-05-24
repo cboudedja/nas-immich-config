@@ -1,0 +1,11 @@
+[Unit]
+Description=CPU Power Governor
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/cpupower frequency-set -g powersave
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+

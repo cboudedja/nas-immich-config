@@ -1,0 +1,15 @@
+[Unit]
+Description=NAS Immich Dashboard API
+After=network.target tailscaled.service
+Wants=tailscaled.service
+
+[Service]
+Type=simple
+User=immich
+ExecStartPre=/bin/sleep 30
+ExecStart=/usr/bin/python3 /home/immich/nas-api.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
