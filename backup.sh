@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source ~/.env
+source /home/immich/.env
 # Verrou pour éviter deux instances simultanées
 LOG="/home/immich/backup.log"
 LOCKFILE="/tmp/backup.lock"

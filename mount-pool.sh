@@ -1,6 +1,6 @@
 #!/bin/bash
 # Déclencher l'automount des deux disques Freebox
-source ~/.env
+source /home/immich/.env
 ls /mnt/freebox-ssd > /dev/null 2>&1
 ls /mnt/freebox-hdd > /dev/null 2>&1
 

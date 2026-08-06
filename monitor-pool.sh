@@ -1,6 +1,6 @@
 #!/bin/bash
 LOG="/home/immich/monitor.log"
-source ~/.env
+source /home/immich/.env
 
 
 notify() {

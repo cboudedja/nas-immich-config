@@ -1,6 +1,6 @@
 #!/bin/bash
 LOG="/home/immich/backup-postgres.log"
-source ~/.env
+source /home/immich/.env
 BACKUP_DIR="/mnt/backup/postgres"
 DATE=$(date '+%Y-%m-%d')
 
