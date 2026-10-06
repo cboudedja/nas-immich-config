@@ -70,6 +70,64 @@ def sh(cmd):
         return out
     return _sh_orig(cmd)
 
+import json, threading
+HISTORY_FILE = os.path.expanduser('~/nas-history.json')
+HISTORY_MAX = 288
+_hist_lock = threading.Lock()
+_hcpu = None
+
+def _sample():
+    global _hcpu
+    with open('/proc/stat') as f:
+        v = list(map(int, f.readline().split()[1:]))
+    idle, total = v[3] + v[4], sum(v)
+    prev, _hcpu = _hcpu, (idle, total)
+    cpu = 0 if (not prev or total == prev[1]) else round((1 - (idle - prev[0]) / (total - prev[1])) * 100)
+    mem = {}
+    with open('/proc/meminfo') as f:
+        for line in f:
+            k, val = line.split(':')
+            mem[k] = int(val.split()[0])
+    ram = round((1 - mem['MemAvailable'] / mem['MemTotal']) * 100)
+    temps = re.findall(r'Core \d+:\s+\+?([\d.]+)°C', sh("sensors"))
+    temp = round(max(float(t) for t in temps)) if temps else 0
+    return {'t': int(time.time()), 'temp': temp, 'cpu': cpu, 'ram': ram}
+
+def _history_loop():
+    try:
+        _sample()
+    except Exception:
+        pass
+    time.sleep(60)
+    while True:
+        try:
+            pt = _sample()
+            with _hist_lock:
+                try:
+                    with open(HISTORY_FILE) as f:
+                        data = json.load(f)
+                except Exception:
+                    data = []
+                data = (data + [pt])[-HISTORY_MAX:]
+                with open(HISTORY_FILE + '.tmp', 'w') as f:
+                    json.dump(data, f)
+                os.replace(HISTORY_FILE + '.tmp', HISTORY_FILE)
+        except Exception:
+            pass
+        time.sleep(300)
+
+threading.Thread(target=_history_loop, daemon=True).start()
+
+@app.route('/history')
+@require_token
+def history():
+    try:
+        with _hist_lock:
+            with open(HISTORY_FILE) as f:
+                return jsonify(json.load(f))
+    except Exception:
+        return jsonify([])
+
 @app.route('/')
 def dashboard():
     with open(os.path.join(DASHBOARD_DIR, 'index.html'), 'r') as f:

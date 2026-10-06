@@ -433,8 +433,8 @@ function updateDashboard(data) {
   // Graphique
   const now = new Date();
   const t = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
-  labels.push(t); tempHistory.push(temp); cpuHistory.push(cpuPct); ramHistory.push(ramPct);
-  if (labels.length > MAX_POINTS) { labels.shift(); tempHistory.shift(); cpuHistory.shift(); ramHistory.shift(); }
+  
+  
   chart.update();
 
   document.getElementById('last-update').textContent = 'Mis à jour à ' + now.toLocaleTimeString('fr');
@@ -457,6 +457,23 @@ async function fetchData() {
 function refreshAll() { fetchData(); }
 fetchData();
 setInterval(fetchData, 5000);
+
+async function loadHistory() {
+  try {
+    const res = await fetch(API_URL.replace('/metrics', '/history'), { headers: { 'X-API-Token': API_TOKEN } });
+    if (!res.ok) return;
+    const pts = await res.json();
+    labels.length = tempHistory.length = cpuHistory.length = ramHistory.length = 0;
+    pts.forEach(p => {
+      const d = new Date(p.t * 1000);
+      labels.push(d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0'));
+      tempHistory.push(p.temp); cpuHistory.push(p.cpu); ramHistory.push(p.ram);
+    });
+    chart.update();
+  } catch (e) {}
+}
+loadHistory();
+setInterval(loadHistory, 300000);
 
 function copyCmd(text) {
   navigator.clipboard.writeText(text).then(() => {
