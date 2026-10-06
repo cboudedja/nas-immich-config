@@ -24,6 +24,17 @@ def send_alert(title, message, priority="default", tags=""):
     except:
         pass
 
+_last_cpu = None
+def cpu_percent():
+    global _last_cpu
+    with open('/proc/stat') as f:
+        vals = list(map(int, f.readline().split()[1:]))
+    idle, total = vals[3] + vals[4], sum(vals)
+    prev, _last_cpu = _last_cpu, (idle, total)
+    if not prev or total == prev[1]:
+        return 0
+    return round((1 - (idle - prev[0]) / (total - prev[1])) * 100)
+
 app = Flask(__name__)
 CORS(app)
 
@@ -44,6 +55,20 @@ def require_token(f):
             abort(401)
         return f(*args, **kwargs)
     return decorated
+
+_sh_orig = sh
+_psql_cache = {}
+def sh(cmd):
+    if 'psql' in cmd:
+        now = time.time()
+        hit = _psql_cache.get(cmd)
+        if hit and now - hit[0] < 300:
+            return hit[1]
+        out = _sh_orig(cmd)
+        if out:
+            _psql_cache[cmd] = (now, out)
+        return out
+    return _sh_orig(cmd)
 
 @app.route('/')
 def dashboard():
@@ -86,9 +111,7 @@ def metrics():
 
     # CPU usage (load average)
     try:
-        load1 = os.getloadavg()[0]
-        ncpu = os.cpu_count() or 1
-        data['cpuPct'] = min(round(load1 / ncpu * 100), 100)
+        data['cpuPct'] = cpu_percent()
     except:
         data['cpuPct'] = 0
 
