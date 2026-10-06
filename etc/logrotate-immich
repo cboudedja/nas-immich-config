@@ -1,6 +1,8 @@
 /home/immich/backup.log
 /home/immich/backup-postgres.log
-/home/immich/monitor.log {
+/home/immich/monitor.log
+/home/immich/network-watchdog.log
+/home/immich/network-diag.log {
     weekly
     rotate 4
     compress
