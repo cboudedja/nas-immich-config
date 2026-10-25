@@ -236,6 +236,36 @@ nas-immich-config/
 
 ---
 
+## 🛡️ Protections du pool et de la sauvegarde
+
+### Fichiers témoins
+
+Chaque disque du pool contient un fichier témoin, lu **à travers le pool** pour vérifier que le disque est réellement visible par mergerfs (un partage SMB peut rester « monté » tout en étant invisible) :
+
+| Fichier | Disque |
+|---------|--------|
+| `.sentinel-photos` | SSD interne MacBook |
+| `.sentinel-freebox-ssd` | SSD Freebox |
+| `.sentinel-freebox-hdd` | HDD Freebox |
+
+- `backup.sh` : annule la sauvegarde si un témoin est illisible, puis envoie une notification
+- `monitor-pool.sh` : remonte les partages Freebox et reconstruit le pool, puis envoie une notification
+
+> ⚠️ Les témoins sont stockés sur les disques et **ne sont pas versionnés**. Après une réinstallation ou un remplacement de disque, il faut les recréer, sinon la sauvegarde sera annulée chaque nuit et le pool reconstruit toutes les 5 minutes :
+
+```bash
+for b in photos freebox-ssd freebox-hdd; do echo "$b" | sudo tee /mnt/$b/.sentinel-$b > /dev/null; done
+ls -la /mnt/immich-pool/.sentinel-*
+```
+
+### Garde-fous de `backup.sh`
+
+- Vérifie que le bon HDD de backup est monté (UUID)
+- Vérifie que le pool est complet et que les 3 témoins sont lisibles
+- `--max-delete=500` : rsync s'arrête s'il veut supprimer plus de 500 fichiers en une nuit
+
+---
+
 ## 🔄 Synchronisation du repo
 
 Pour synchroniser les configs vers Git après une modification :
