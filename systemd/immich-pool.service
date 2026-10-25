@@ -1,16 +1,15 @@
 [Unit]
 Description=Immich mergerfs pool
-After=network-online.target
+After=network-online.target remote-fs.target
 Wants=network-online.target
+Before=docker.service
 
 [Service]
 Type=oneshot
 RemainAfterExit=yes
 ExecStartPre=/bin/sleep 25
 ExecStart=/home/immich/mount-pool.sh
-ExecStartPost=/bin/bash -c 'cd /home/immich/immich && docker compose up -d'
 ExecStop=/bin/umount /mnt/immich-pool
-User=root
 
 [Install]
 WantedBy=multi-user.target
