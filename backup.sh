@@ -27,7 +27,8 @@ fi
 # 2. Le pool est complet (sinon --delete effacerait des fichiers du backup)
 if ! mountpoint -q /mnt/freebox-ssd || ! mountpoint -q /mnt/freebox-hdd \
    || ! mount | grep -q "photos:freebox-ssd:freebox-hdd on /mnt/immich-pool" \
-   || [ ! -d /mnt/immich-pool/library ]; then
+   || [ ! -d /mnt/immich-pool/library ] \
+   || ! timeout -s KILL 20 cat /mnt/immich-pool/.sentinel-photos /mnt/immich-pool/.sentinel-freebox-ssd /mnt/immich-pool/.sentinel-freebox-hdd > /dev/null 2>&1; then
     log "ERREUR: pool incomplet - rsync annule pour proteger le backup"
     notify "❌ Sauvegarde annulée" "urgent" "Pool incomplet (disques Freebox absents) — rsync annulé pour protéger le backup"
     exit 1
@@ -43,6 +44,7 @@ rsync -a --delete --max-delete=500 \
     --exclude='.fbxtimeshifting/' \
     --exclude='backups/' \
     --exclude='encoded-video/' \
+    --exclude='.sentinel-*' \
     --stats \
     /mnt/immich-pool/ /mnt/backup/ >> "$LOG" 2>&1
 RSYNC_EXIT=$?
